@@ -1,5 +1,5 @@
 import requests
-from utils import BASE_URL, ID_PARLAMENTAR, PERIODO
+from utils import BASE_URL
 from urllib.parse import urlencode
 
 
@@ -14,6 +14,7 @@ def buscar_deputados(id):
         response: objeto Response com os dados do deputado
         None: se ocorrer algum erro na requisição
     """
+    print("Aguarde: Buscando dados do deputado...")
     try:
         response = requests.get(f'{BASE_URL}/deputados/{id}')
         response.raise_for_status()
@@ -37,6 +38,7 @@ def buscar_gastos(id, ano):
     Returns:
         response: objeto Response com as despesas do deputado
     """
+    print("Aguarde: Buscando os gastos do deputado...")
     queryparameters = urlencode({'ano': ','.join(map(str, ano))})
     resp_completo = []
     next_page = True
