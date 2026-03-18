@@ -176,7 +176,7 @@ DB_NAME=gastos_parlamentares
 | Parte 2 | Extract — buscar dados da API | ✅ Concluído |
 | Parte 3 | Transform — limpar dados | ✅ Concluído |
 | Parte 4 | Load — salvar no banco | ✅ Concluído |
-| Parte 5 | Automatizar com APScheduler | 🔄 Pendente |
+| Parte 5 | Automatizar com APScheduler | ✅ Concluído |
 | Parte 6 | README profissional | 🔄 Pendente |
 
 ---
