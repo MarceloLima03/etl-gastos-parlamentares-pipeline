@@ -58,9 +58,10 @@ def inserir_deputado(conn, data_frame_deputado):
         cursor = conn.cursor()
         for _, row in data_frame_deputado.iterrows():
             cursor.execute("""
+                IF NOT EXISTS (SELECT 1 FROM dim_deputados WHERE ID_DEPUTADO = ?)
                 INSERT INTO dim_deputados(ID_DEPUTADO, NOME, PARTIDO, ESTADO, EMAIL, NASCIMENTO, ESCOLARIDADE)
                 VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (row['id'], row['nome'], row['partido'], row['estado'], row['email'], row['nascimento'], row['escolaridade'])
+                (row['id'], row['id'], row['nome'], row['partido'], row['estado'], row['email'], row['nascimento'], row['escolaridade'])
             )
     except pyodbc.Error as e:
         print(f'Erro ao fechar cursor: {e}')
