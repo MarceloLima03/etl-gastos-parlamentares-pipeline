@@ -160,10 +160,11 @@ Ver lista completa em `requirements.txt`.
 ## 🔐 Variáveis de Ambiente (.env)
 
 ```
-DRIVER={ODBC Driver 17 for SQL Server}
-SERVER=SEU_SERVIDOR
-TRUSTED_CONNECTION=yes
-DB_NAME=gastos_parlamentares
+DB_HOST=
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+DB_PORT=
 ```
 
 ---
@@ -202,10 +203,19 @@ DB_NAME=gastos_parlamentares
 ### FASE 2 — Containerizar com Docker (2-3 semanas)
 > Objetivo: eliminar dependência do ambiente Windows e SQL Server local
 
-- [ ] Criar `Dockerfile` para o pipeline
-- [ ] Subir pipeline + PostgreSQL com `docker-compose`
-- [ ] Migrar de SQL Server para PostgreSQL
-- [ ] Garantir que `docker-compose up` sobe tudo do zero
+- [x] Criar `Dockerfile` para o pipeline
+- [x] Subir pipeline + PostgreSQL com `docker-compose`
+- [x] Migrar de SQL Server para PostgreSQL
+- [x] Garantir que `docker-compose up` sobe tudo do zero
+
+## 🐳 Decisões Técnicas — Docker
+
+- Migrado de SQL Server para PostgreSQL — melhor suporte Docker e open source
+- Porta exposta como 5433 para evitar conflito com processos locais
+- `healthcheck` garante que pipeline só inicia após banco estar pronto
+- `restart: no` — pipeline ETL roda uma vez e termina
+- `psycopg2` requer `commit()` explícito — diferente do pyodbc
+- Volume `pgdata` persiste dados entre reinicializações do container
 
 **Entregável:** Qualquer pessoa clona o repo e executa `docker-compose up`.
 
@@ -258,18 +268,19 @@ DB_NAME=gastos_parlamentares
 | Parte 2 | Extract — buscar dados da API | ✅ Concluído |
 | Parte 3 | Transform — limpar dados | ✅ Concluído |
 | Parte 4 | Load — salvar no banco | ✅ Concluído |
-| Parte 5 | Automatizar com APScheduler | 🔄 Pendente |
+| Parte 5 | Automatizar com APScheduler | ✅ Concluído |
 | Parte 6 | README profissional | 🔄 Pendente |
 
 ---
 
 ## 🚀 Próximos Passos Imediatos
 
-- [ ] Automatizar pipeline com `APScheduler`
+- [x] Automatizar pipeline com `APScheduler`
+- [x] Containerizar com Docker
+- [x] Migrar de SQL Server para PostgreSQL
 - [ ] Adicionar `logging` profissional (substituir prints)
 - [ ] Escrever README com diagrama de arquitetura
 - [ ] Expandir para múltiplos deputados
-- [ ] Containerizar com Docker
 - [ ] Migrar orquestração para Apache Airflow
 - [ ] Adicionar transformações com dbt
 - [ ] Deploy na AWS
