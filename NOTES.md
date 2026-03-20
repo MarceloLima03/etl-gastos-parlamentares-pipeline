@@ -6,7 +6,7 @@
 - Sistema Operacional: Windows
 - Editor: VSCode
 - Ambiente virtual: venv
-- Banco de dados: SQL Server (SSMS)
+- Banco de dados: PostgreSQL (via Docker)
 
 ---
 
@@ -16,9 +16,9 @@
 |---|---|
 | `requests` | Buscar dados da API da Câmara dos Deputados |
 | `pandas` | Transformar e limpar os dados |
-| `pyodbc` | Conectar Python ao SQL Server |
-| `sqlalchemy` | Suporte ao pyodbc |
+| `psycopg2-binary` | Conectar Python ao PostgreSQL |
 | `python-dotenv` | Carregar credenciais do .env |
+| `apscheduler` | Agendamento do pipeline |
 
 ---
 
@@ -54,14 +54,16 @@ etl-gastos-parlamentares-pipeline/
 ├── src/
 │   ├── extract.py       → busca dados da API
 │   ├── transform.py     → limpa e organiza os dados
-│   ├── load.py          → salva no banco SQL Server
+│   ├── load.py          → salva no PostgreSQL
 │   ├── utils.py         → configurações compartilhadas
 │   └── __init__.py
 │
 ├── sql/
-│   └── create_tables.sql  → cria banco e tabelas
+│   └── create_tables.sql  → cria tabelas no PostgreSQL
 │
 ├── main.py              → orquestra o pipeline
+├── Dockerfile           → empacota o pipeline
+├── docker-compose.yml   → orquestra pipeline + PostgreSQL
 ├── .env                 → credenciais (nunca sobe pro GitHub)
 ├── .env.example         → modelo público das variáveis
 ├── .gitignore           → arquivos ignorados pelo Git
@@ -90,7 +92,7 @@ API Câmara dos Deputados
     ├── inserir_deputado(conn, df)
     └── inserir_gastos(conn, df, id_deputado)
         ↓
-    SQL Server
+    PostgreSQL (Docker)
     ├── dim_deputados
     └── fact_gastos
 ```
@@ -102,83 +104,81 @@ API Câmara dos Deputados
 ### DIM_DEPUTADOS
 ```sql
 ID_DEPUTADO  INT PRIMARY KEY      -- ID vem da API
-NOME         VARCHAR(255)
-PARTIDO      VARCHAR(10)
-ESTADO       VARCHAR(2)
-EMAIL        VARCHAR(255)
+NOME         TEXT
+PARTIDO      TEXT
+ESTADO       TEXT
+EMAIL        TEXT
 NASCIMENTO   DATE
-ESCOLARIDADE VARCHAR(255)
+ESCOLARIDADE TEXT
 ```
 
 ### FACT_GASTOS
 ```sql
-ID_GASTOS        INT IDENTITY PRIMARY KEY
-ID_DEPUTADO      INT FOREIGN KEY → dim_deputados
-ANO              INT
-MES              INT
-TIPO_DESPESA     VARCHAR(255)
-COD_DOCUMENTO    VARCHAR(50)
-TIPO_DOCUMENTO   VARCHAR(255)
+ID_GASTOS          SERIAL PRIMARY KEY
+ID_DEPUTADO        INT REFERENCES dim_deputados
+ANO                INT
+MES                INT
+TIPO_DESPESA       TEXT
+COD_DOCUMENTO      TEXT
+TIPO_DOCUMENTO     TEXT
 COD_TIPO_DOCUMENTO INT
-DATA_DOCUMENTO   DATETIME
-NUM_DOCUMENTO    VARCHAR(50)
-VALOR_DOCUMENTO  FLOAT
-URL_DOCUMENTO    VARCHAR(255)
-NOME_FORNECEDOR  VARCHAR(255)
-CNPJ_FORNECEDOR  VARCHAR(255)
-VALOR_LIQUIDO    FLOAT
-VALOR_GLOSA      FLOAT
-NUM_RESSARCIMENTO VARCHAR(255)
-COD_LOTE         INT
-PARCELA          INT
+DATA_DOCUMENTO     TIMESTAMP
+NUM_DOCUMENTO      TEXT
+VALOR_DOCUMENTO    NUMERIC(10,2)
+URL_DOCUMENTO      TEXT
+NOME_FORNECEDOR    TEXT
+CNPJ_FORNECEDOR    TEXT
+VALOR_LIQUIDO      NUMERIC(10,2)
+VALOR_GLOSA        NUMERIC(10,2)
+NUM_RESSARCIMENTO  TEXT
+COD_LOTE           INT
+PARCELA            INT
 ```
 
 ---
 
-## 📌 Decisões Técnicas
+## 📌 Decisões Técnicas — Pipeline
 
 - Credenciais do banco ficam no `.env` — nunca sobem pro GitHub
 - `.env.example` sobe pro GitHub como modelo para a equipe
 - Commits seguem padrão semântico: `feat`, `fix`, `docs`, `refactor`
 - `utils.py` guarda configurações compartilhadas entre os arquivos
 - `None` é retornado em caso de exception
-- `ID_DEPUTADO` vem da API — não é gerado pelo banco (`IDENTITY`)
+- `ID_DEPUTADO` vem da API — não é gerado pelo banco
 - Conexão é aberta no `main.py` e fechada no `finally`
-- `autocommit=True` necessário para `CREATE DATABASE` no SQL Server
-- `GO` é separador do SSMS — o Python divide os blocos com `.split('GO')`
 - Tipos numpy convertidos para tipos nativos Python antes do INSERT
+- `psycopg2` requer `commit()` explícito após INSERT
+- `ON CONFLICT (ID_DEPUTADO) DO NOTHING` evita duplicatas no deputado
 
 ---
 
-## 📦 Dependências
+## 🐳 Decisões Técnicas — Docker
 
-As bibliotecas instaladas trouxeram dependências automáticas.
-Ver lista completa em `requirements.txt`.
+- Migrado de SQL Server para PostgreSQL — melhor suporte Docker e open source
+- Porta exposta como `5433` para evitar conflito com processos locais
+- `healthcheck` garante que pipeline só inicia após banco estar pronto
+- `restart: no` — pipeline ETL roda uma vez e termina
+- Volume `pgdata` persiste dados entre reinicializações do container
+- Variáveis sensíveis usam `${}` no docker-compose — valores ficam no `.env`
+- `.env` sem aspas nos valores — docker-compose não interpreta aspas corretamente
 
 ---
 
 ## 🔐 Variáveis de Ambiente (.env)
 
 ```
-DB_HOST=
-DB_NAME=
-DB_USER=
-DB_PASSWORD=
-DB_PORT=
+DB_HOST=database
+DB_NAME=gastos_parlamentares
+DB_USER=postgres
+DB_PASSWORD=sua_senha
+DB_PORT=5432
 ```
 
 ---
 
-## ✅ Status das Partes
+## 📦 Dependências
 
-| Parte | Descrição | Status |
-|---|---|---|
-| Parte 1 | Configurar ambiente | ✅ Concluído |
-| Parte 2 | Extract — buscar dados da API | ✅ Concluído |
-| Parte 3 | Transform — limpar dados | ✅ Concluído |
-| Parte 4 | Load — salvar no banco | ✅ Concluído |
-| Parte 5 | Automatizar com APScheduler | ✅ Concluído |
-| Parte 6 | README profissional | 🔄 Pendente |
+Ver lista completa em `requirements.txt`.
 
 ---
 
@@ -191,6 +191,7 @@ DB_PORT=
 - [x] Modelo dimensional (dim_deputados + fact_gastos)
 - [x] Credenciais protegidas com `.env`
 - [x] Commits semânticos e repositório no GitHub
+- [x] Automatizar com APScheduler
 - [ ] Substituir `print()` por `logging` estruturado
 - [ ] Adicionar retry nas chamadas de API
 - [ ] README profissional com diagrama de arquitetura
@@ -208,16 +209,7 @@ DB_PORT=
 - [x] Migrar de SQL Server para PostgreSQL
 - [x] Garantir que `docker-compose up` sobe tudo do zero
 
-## 🐳 Decisões Técnicas — Docker
-
-- Migrado de SQL Server para PostgreSQL — melhor suporte Docker e open source
-- Porta exposta como 5433 para evitar conflito com processos locais
-- `healthcheck` garante que pipeline só inicia após banco estar pronto
-- `restart: no` — pipeline ETL roda uma vez e termina
-- `psycopg2` requer `commit()` explícito — diferente do pyodbc
-- Volume `pgdata` persiste dados entre reinicializações do container
-
-**Entregável:** Qualquer pessoa clona o repo e executa `docker-compose up`.
+**Entregável:** Qualquer pessoa clona o repo e executa `docker-compose up`. ✅
 
 ---
 
@@ -284,3 +276,19 @@ DB_PORT=
 - [ ] Migrar orquestração para Apache Airflow
 - [ ] Adicionar transformações com dbt
 - [ ] Deploy na AWS
+
+---
+
+## 🧠 Conceitos Aprendidos
+
+| Conceito | Onde foi aplicado |
+|---|---|
+| ETL | Pipeline completo extract → transform → load |
+| Modelagem dimensional | dim_deputados + fact_gastos |
+| API REST + paginação | buscar_gastos com loop de páginas |
+| Ambiente virtual | venv isolando dependências |
+| Variáveis de ambiente | .env + python-dotenv |
+| Docker | Dockerfile + docker-compose |
+| PostgreSQL | Banco relacional open source |
+| Git semântico | feat, fix, docs, refactor |
+| Clean Code | Funções pequenas, docstrings, PEP 8 |
