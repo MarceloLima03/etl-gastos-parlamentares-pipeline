@@ -1,5 +1,4 @@
 import sys
-import pyodbc
 sys.path.append("src")
 from extract import buscar_deputados, buscar_gastos
 from transform import transformar_dados_deputado, transformar_gastos
@@ -24,5 +23,8 @@ def executar_pipeline():
             try:
                 conn.close()
                 print('Aguarde: Fechando conexão com o banco...')
-            except pyodbc.Error as e:
+            except Exception as e:
                 print(f'Erro ao fechar conexão: {e}')
+
+if __name__ == '__main__':
+    executar_pipeline()
