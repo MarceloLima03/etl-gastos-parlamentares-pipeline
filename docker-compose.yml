@@ -1,0 +1,32 @@
+# docker-compose.yml
+services:                          # define os containers que vão rodar
+  database:                        # nome do serviço do banco
+    image: postgres:15             # usa a imagem oficial do PostgreSQL versão 15
+    volumes:
+      - pgdata:/var/lib/postgresql/data  # persiste os dados do banco num volume
+    environment:
+      POSTGRES_USER: ${DB_USER}          # usuário do banco — vem do .env
+      POSTGRES_PASSWORD: ${DB_PASSWORD}  # senha — vem do .env
+      POSTGRES_DB: ${DB_NAME}            # nome do banco — vem do .env
+    ports:
+      - "5433:5432"                # expõe a porta 5432 do container para o host
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]  # verifica se o banco está pronto
+      interval: 5s                 # verifica a cada 5 segundos
+      timeout: 5s                  # aguarda 5 segundos por resposta
+      retries: 5                   # tenta 5 vezes antes de desistir
+
+  app:                             # nome do serviço do pipeline
+    build: .                       # constrói a imagem a partir do Dockerfile na raiz
+    container_name: etl-deputados  # nome do container
+    restart: no                    # não reinicia após terminar
+    depends_on:
+      database:
+        condition: service_healthy # só inicia após o banco estar saudável
+    env_file:
+      - .env                       # carrega variáveis do .env no container
+    working_dir: /app              # pasta de trabalho dentro do container
+    command: ["python", "main.py"] # comando executado quando o container inicia
+
+volumes:
+  pgdata:                          # declara o volume para persistir dados do banco
