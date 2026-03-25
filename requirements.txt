@@ -3,3 +3,4 @@ pandas==3.0.1
 psycopg2-binary==2.9.11
 python-dotenv==1.2.2
 Requests==2.32.5
+tenacity==9.1.4
