@@ -1,10 +1,16 @@
 import requests
 from utils import BASE_URL
 from urllib.parse import urlencode
-import sys
-sys.path.append("src")
 from logging_config import logger
+import logging
+from tenacity import retry, stop_after_attempt, wait_fixed, after_log, retry_if_exception_type
 
+@retry(stop=stop_after_attempt(3), 
+       wait=wait_fixed(2), 
+       after=after_log(logger, logging.WARNING),
+       retry=(retry_if_exception_type(requests.exceptions.HTTPError) | 
+              retry_if_exception_type(requests.exceptions.RequestException)),
+              reraise=True)
 def buscar_deputados(id):
     """
     Busca informações básicas de um deputado na API da Câmara.
@@ -29,6 +35,12 @@ def buscar_deputados(id):
 
     return response
 
+@retry(stop=stop_after_attempt(3), 
+       wait=wait_fixed(2), 
+       after=after_log(logger, logging.WARNING),
+       retry=(retry_if_exception_type(requests.exceptions.HTTPError) | 
+              retry_if_exception_type(requests.exceptions.RequestException)),
+              reraise=True)
 def buscar_gastos(id, ano):
     """
     Busca as despesas de um parlamentar na API da Câmara.
