@@ -4,6 +4,7 @@ from extract import buscar_deputados, buscar_gastos
 from transform import transformar_dados_deputado, transformar_gastos
 from load import conexao, criar_tabelas, inserir_deputado, inserir_gastos
 from utils import ID_PARLAMENTAR, PERIODO
+from logging_config import logger
 
 def executar_pipeline():
     conn = conexao()
@@ -22,9 +23,9 @@ def executar_pipeline():
         if conn is not None:
             try:
                 conn.close()
-                print('Aguarde: Fechando conexão com o banco...')
+                logger.info('Aguarde: Fechando conexão com o banco...')
             except Exception as e:
-                print(f'Erro ao fechar conexão: {e}')
+                logger.error(f'Erro ao fechar conexão: {e}')
 
 if __name__ == '__main__':
     executar_pipeline()
