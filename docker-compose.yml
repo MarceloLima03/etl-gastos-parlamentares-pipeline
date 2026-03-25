@@ -25,7 +25,11 @@ services:                          # define os containers que vão rodar
         condition: service_healthy # só inicia após o banco estar saudável
     env_file:
       - .env                       # carrega variáveis do .env no container
+    environment:
+      TZ: America/Sao_Paulo
     working_dir: /app              # pasta de trabalho dentro do container
+    volumes:
+      - ./logs:/app/logs           # gerar logs no arquivo pipeline.log
     command: ["python", "main.py"] # comando executado quando o container inicia
 
 volumes:
