@@ -1,6 +1,9 @@
 import psycopg2
 import os
 from dotenv import load_dotenv
+import sys
+sys.path.append("src")
+from logging_config import logger
 
 load_dotenv()
 
@@ -11,7 +14,7 @@ def conexao():
     Returns:
         psycopg2.connect - conexão aberta com o banco PostgreSQL
     """
-    print("Aguarde: Abrindo conexão com o banco...")
+    logger.info("Aguarde: Abrindo conexão com o banco...")
     conn = psycopg2.connect(
         host=os.getenv('DB_HOST'),
         database=os.getenv('DB_NAME'),
@@ -29,7 +32,7 @@ def criar_tabelas(conn):
     Args:
         conn (conexão psycopg2): Conexão com o banco
     """
-    print("Aguarde: Criando tabela no banco...")
+    logger.info("Aguarde: Criando tabela no banco...")
     try:
         cursor = conn.cursor()
 
@@ -38,13 +41,13 @@ def criar_tabelas(conn):
             cursor.execute(conteudo_sql)
             conn.commit()
     except psycopg2.Error as e:
-        print(f'Erro de conexão: {e}')
+        logger.error(f'Erro de conexão: {e}')
     finally:
         if cursor is not None:
             try:
                 cursor.close()
             except psycopg2.Error as e:
-                print(f'Erro ao fechar cursor: {e}')
+                logger.error(f'Erro ao fechar cursor: {e}')
 
 def inserir_deputado(conn, data_frame_deputado):
     """
@@ -54,7 +57,7 @@ def inserir_deputado(conn, data_frame_deputado):
         conn (conexão psycopg2): Conexão com o banco
         data_frame_deputado (dataFrame): dataFrame padronizado
     """
-    print("Aguarde: Inserindo dados na tabela dim_deputados...")
+    logger.info("Aguarde: Inserindo dados na tabela dim_deputados...")
     try:
         cursor = conn.cursor()
         for _, row in data_frame_deputado.iterrows():
@@ -66,13 +69,13 @@ def inserir_deputado(conn, data_frame_deputado):
             )
         conn.commit()
     except psycopg2.Error as e:
-        print(f'Erro ao fechar cursor: {e}')
+        logger.error(f'Erro ao fechar cursor: {e}')
     finally:
         if cursor is not None:
             try:
                 cursor.close()
             except psycopg2.Error as e:
-                print(f'Erro ao fechar cursor: {e}')
+                logger.error(f'Erro ao fechar cursor: {e}')
 
 def inserir_gastos(conn, data_frame_gastos, id_deputado):
     """
@@ -83,7 +86,7 @@ def inserir_gastos(conn, data_frame_gastos, id_deputado):
         data_frame_gastos (dataFrame): dataFrame padronizado
         id_deputado (int): ID do deputado
     """
-    print("Aguarde: Inserindo dados na tabela fact_gastos...")
+    logger.info("Aguarde: Inserindo dados na tabela fact_gastos...")
     try:
         cursor = conn.cursor()
         for _, row in data_frame_gastos.iterrows():
@@ -99,10 +102,10 @@ def inserir_gastos(conn, data_frame_gastos, id_deputado):
             )
         conn.commit()
     except psycopg2.Error as e:
-        print(f'Erro ao fechar cursor: {e}')
+        logger.error(f'Erro ao fechar cursor: {e}')
     finally:
         if cursor is not None:
             try:
                 cursor.close()
             except psycopg2.Error as e:
-                print(f'Erro ao fechar cursor: {e}')
+                logger.error(f'Erro ao fechar cursor: {e}')

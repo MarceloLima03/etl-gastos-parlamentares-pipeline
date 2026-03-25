@@ -1,7 +1,9 @@
 import requests
 from utils import BASE_URL
 from urllib.parse import urlencode
-
+import sys
+sys.path.append("src")
+from logging_config import logger
 
 def buscar_deputados(id):
     """
@@ -14,15 +16,15 @@ def buscar_deputados(id):
         response: objeto Response com os dados do deputado
         None: se ocorrer algum erro na requisição
     """
-    print("Aguarde: Buscando dados do deputado...")
+    logger.info("Aguarde: Buscando dados do deputado...")
     try:
         response = requests.get(f'{BASE_URL}/deputados/{id}')
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        print(f'HTTP error occurred:{e}')
+        logger.error(f'HTTP error occurred:{e}')
         return None
     except requests.exceptions.RequestException as e:
-        print(f'A request error occurred:{e}')
+        logger.error(f'A request error occurred:{e}')
         return None
 
     return response
@@ -38,7 +40,7 @@ def buscar_gastos(id, ano):
     Returns:
         response: objeto Response com as despesas do deputado
     """
-    print("Aguarde: Buscando os gastos do deputado...")
+    logger.info("Aguarde: Buscando os gastos do deputado...")
     queryparameters = urlencode({'ano': ','.join(map(str, ano))})
     resp_completo = []
     next_page = True
@@ -59,10 +61,10 @@ def buscar_gastos(id, ano):
                 elif link.get('rel') == 'previous': 
                     next_page = False
     except requests.exceptions.HTTPError as e:
-        print(f'HTTP error occurred:{e}')
+        logger.error(f'HTTP error occurred:{e}')
         return None
     except requests.exceptions.RequestException as e:
-        print(f'A request error occurred:{e}')
+        logger.error(f'A request error occurred:{e}')
         return None
     
     return resp_completo
